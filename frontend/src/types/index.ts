@@ -24,6 +24,15 @@ export interface University {
   campusName?: string; // 캠퍼스명
   logoUrl?: string;   // 대학교 로고 이미지 URL
   position?: MapPosition; // 지도상 위치 (위도, 경도)
+  departments?: UniversityDepartment[]; // 대학교에 소속된 학과 목록
+}
+
+// 대학교 내 학과 정보 타입 (간소화된 형태)
+export interface UniversityDepartment {
+  id: string;
+  departmentName: string;     // 학과 이름
+  minGrade: number;          // 최소 내신 등급
+  maxGrade: number;          // 최대 내신 등급
 }
 
 // 학과 정보 타입 정의

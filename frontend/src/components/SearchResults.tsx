@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import type { SearchResult, SearchFilters, ModalState } from '../types';
 import { searchUniversitiesByGrade } from '../services/universityService';
 import UniversityModal from './UniversityModal';
+import Pagination from './Pagination';
 
 // 검색 결과 컴포넌트의 props 타입 정의
 interface SearchResultsProps {
@@ -32,6 +33,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     selectedUniversity: null,
     selectedDepartment: null
   });
+  // 페이지네이션 관련 상태
+  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지
+  const itemsPerPage = 10; // 한 페이지에 보여줄 결과 수
+
+  // 검색 조건이 바뀌면 항상 1페이지로 초기화
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [grade, admissionType, departmentName, filters]);
 
   // 검색 조건이 변경될 때마다 검색 실행
   useEffect(() => {
@@ -46,7 +55,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         setLoading(true);
         setError(null);
         
-        // 대학교 검색 서비스 호출
+        // Firestore에서 대학교 검색 서비스 호출 (mock이 아닌 실제 DB)
         const searchResults = await searchUniversitiesByGrade(
           grade,
           admissionType,
@@ -92,6 +101,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       selectedDepartment: null
     });
   };
+
+  // 페이지에 따라 보여줄 결과만 잘라서 사용
+  const pagedResults = results.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // 로딩 상태
   if (loading) {
@@ -149,7 +164,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       </ResultHeader>
 
       <CardGrid>
-        {results.map((result, index) => (
+        {pagedResults.map((result, index) => (
           <UniversityCard 
             key={`${result.university.id}-${result.department.id}`}
             onClick={() => handleCardClick(result)}
@@ -217,6 +232,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           </UniversityCard>
         ))}
       </CardGrid>
+
+      {/* 페이지네이션 컴포넌트 추가 */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={results.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+      />
 
       {/* 모달 컴포넌트 */}
       <UniversityModal

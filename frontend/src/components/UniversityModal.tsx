@@ -2,6 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import type { University, Department, MapPosition } from '../types';
 
+// Kakao Maps API의 타입을 window 객체에 추가
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
 // 모달 컴포넌트의 props 타입 정의
 interface UniversityModalProps {
   isOpen: boolean;
@@ -21,72 +28,95 @@ const UniversityModal: React.FC<UniversityModalProps> = ({
   department
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
 
-  // 카카오맵 초기화 함수
-  const initializeMap = () => {
-    if (!window.kakao || !window.kakao.maps || !mapRef.current || !university?.position) {
-      return;
-    }
-
-    const { lat, lng } = university.position;
-    
-    // 지도 생성
-    const mapOption = {
-      center: new window.kakao.maps.LatLng(lat, lng),
-      level: 3 // 확대 레벨
-    };
-    
-    const map = new window.kakao.maps.Map(mapRef.current, mapOption);
-    mapInstance.current = map;
-
-    // 마커 생성
-    const markerPosition = new window.kakao.maps.LatLng(lat, lng);
-    const marker = new window.kakao.maps.Marker({
-      position: markerPosition
-    });
-
-    // 마커를 지도에 표시
-    marker.setMap(map);
-
-    // 인포윈도우 생성 (대학교 이름 표시)
-    const infowindow = new window.kakao.maps.InfoWindow({
-      content: `<div style="padding:5px;font-size:12px;">${university.name}</div>`
-    });
-
-    // 마커에 인포윈도우 표시
-    infowindow.open(map, marker);
-  };
-
-  // 카카오맵 스크립트 로드 및 지도 초기화
   useEffect(() => {
     if (!isOpen || !university) return;
 
-    // 카카오맵 스크립트가 이미 로드되어 있는지 확인
-    if (window.kakao && window.kakao.maps) {
-      initializeMap();
+    // --- 진단 코드 시작 ---
+    console.log("모달이 열렸습니다. 지도 설정을 시작합니다.");
+    console.log("대학교 주소:", university.address);
+    console.log("kakao 객체 로드 여부:", !!window.kakao);
+    // --- 진단 코드 끝 ---
+
+    if (!window.kakao || !window.kakao.maps) {
+      console.error("카카오맵 SDK가 로드되지 않았습니다. API 키와 네트워크 연결을 확인하세요.");
       return;
     }
 
-    // 카카오맵 스크립트 동적 로드
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_MAP_API_KEY}&autoload=false`;
-    
-    script.onload = () => {
-      window.kakao.maps.load(() => {
-        initializeMap();
+    const mapContainer = mapRef.current;
+    if (!mapContainer) {
+      console.error("지도를 그릴 map acontainer (mapRef)를 찾을 수 없습니다.");
+      return;
+    }
+
+    // --- 진단 코드: 컨테이너 크기 확인 ---
+    console.log(
+      "지도 컨테이너 크기:",
+      `너비: ${mapContainer.offsetWidth}px`,
+      `높이: ${mapContainer.offsetHeight}px`
+    );
+
+    const displayMap = (position: { lat: number; lng: number }) => {
+      mapContainer.innerHTML = ''; // 이전 내용 지우기
+      
+      // 카카오맵 설정: level 12 = 가장 넓은 범위로 동아시아 전체를 볼 수 있는 줌 레벨
+      const mapOption = {
+        center: new window.kakao.maps.LatLng(position.lat, position.lng),
+        level: 12, // 동아시아 전체가 보이는 가장 넓은 간격 (약 1024km)
+      };
+
+      console.log("🗺️ 지도 생성 시도:", mapOption);
+
+      const map = new window.kakao.maps.Map(mapContainer, mapOption);
+      map.relayout();
+
+      // 지도 생성 후 실제 레벨 확인
+      const actualLevel = map.getLevel();
+      console.log("📍 설정된 레벨:", actualLevel);
+
+      // 대학교 위치를 빨간색 마커로 표시
+      const marker = new window.kakao.maps.Marker({
+        position: new window.kakao.maps.LatLng(position.lat, position.lng),
       });
+      marker.setMap(map);
+
+      // 강제로 레벨 설정 시도
+      map.setLevel(12);
+      const finalLevel = map.getLevel();
+      console.log("🎯 최종 레벨:", finalLevel);
     };
 
-    document.head.appendChild(script);
-
-    // 컴포넌트 언마운트 시 스크립트 제거
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+    const setupMap = () => {
+      if (university.address) {
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(university.address, (result: any, status: any) => {
+          if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+            const coords = {
+              lat: parseFloat(result[0].y),
+              lng: parseFloat(result[0].x),
+            };
+            console.log("주소 변환 성공:", coords);
+            displayMap(coords);
+          } else {
+            console.error("주소 변환 실패:", status);
+            mapContainer.innerHTML = '<div style="text-align: center; padding: 20px;">위치 정보를 찾을 수 없습니다.</div>';
+          }
+        });
+      } else if (university.position && 'latitude' in university.position && 'longitude' in university.position) {
+          const coords = {
+            lat: university.position.latitude as number,
+            lng: university.position.longitude as number,
+          };
+          console.log("좌표 정보 사용:", coords);
+          displayMap(coords);
+      } else {
+        console.error("주소와 좌표 정보가 모두 없습니다.");
+        mapContainer.innerHTML = '<div style="text-align: center; padding: 20px;">주소 정보가 없습니다.</div>';
       }
     };
+    
+    window.kakao.maps.load(setupMap);
+    
   }, [isOpen, university]);
 
   // 모달이 열려있지 않거나 대학교 정보가 없으면 렌더링하지 않음
