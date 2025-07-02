@@ -1,0 +1,201 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "프로젝트 초기 설정 및 환경 구성",
+        "description": "React, TypeScript, Firebase 기반의 프로젝트 초기 설정 및 개발 환경 구성",
+        "details": "1. Create React App을 사용하여 TypeScript 템플릿으로 프로젝트 생성\n```bash\nnpx create-react-app uniscope --template typescript\n```\n2. Firebase 설정\n```bash\nnpm install firebase\n```\n3. Firebase 프로젝트 생성 및 Firestore 데이터베이스 설정\n4. 카카오맵 API 키 발급 및 설정\n```bash\nnpm install react-kakao-maps-sdk\n```\n5. 기본 폴더 구조 설정 (components, pages, services, types, utils 등)\n6. 기본 라우팅 설정 (react-router-dom 설치 및 구성)\n```bash\nnpm install react-router-dom @types/react-router-dom\n```\n7. 전역 상태 관리 라이브러리 설치 (Context API 또는 Redux)\n8. 기본 스타일링 라이브러리 설치 (styled-components 또는 Tailwind CSS)",
+        "testStrategy": "1. 프로젝트가 오류 없이 빌드되는지 확인\n2. Firebase 연결 테스트\n3. 카카오맵 API 연결 테스트\n4. 기본 라우팅이 정상 작동하는지 확인",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "사용자 정보 입력 컴포넌트 개발",
+        "description": "사용자가 희망 학과와 평균 내신 성적을 입력할 수 있는 UI 컴포넌트 개발",
+        "details": "1. 학과 선택을 위한 드롭다운 또는 검색 가능한 선택 컴포넌트 구현\n```tsx\nconst MajorSelector: React.FC = () => {\n  const [selectedMajor, setSelectedMajor] = useState<string>('');\n  const [majorOptions, setMajorOptions] = useState<string[]>([]);\n  \n  useEffect(() => {\n    // Firebase에서 학과 목록 가져오기\n    const fetchMajors = async () => {\n      // Firestore 쿼리 구현\n    };\n    fetchMajors();\n  }, []);\n  \n  return (\n    <div>\n      <label>희망 학과</label>\n      <select value={selectedMajor} onChange={(e) => setSelectedMajor(e.target.value)}>\n        <option value=\"\">학과를 선택하세요</option>\n        {majorOptions.map((major) => (\n          <option key={major} value={major}>{major}</option>\n        ))}\n      </select>\n    </div>\n  );\n};\n```\n\n2. 내신 성적 입력을 위한 폼 컴포넌트 구현\n```tsx\nconst GradeInput: React.FC = () => {\n  const [grade, setGrade] = useState<number | ''>('');\n  \n  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n    const value = e.target.value;\n    if (value === '' || (parseFloat(value) >= 1 && parseFloat(value) <= 9)) {\n      setGrade(value === '' ? '' : parseFloat(value));\n    }\n  };\n  \n  return (\n    <div>\n      <label>평균 내신 등급</label>\n      <input \n        type=\"number\" \n        min=\"1\" \n        max=\"9\" \n        step=\"0.1\" \n        value={grade} \n        onChange={handleGradeChange} \n        placeholder=\"1.0 ~ 9.0\"\n      />\n    </div>\n  );\n};\n```\n\n3. 두 컴포넌트를 포함하는 사용자 정보 입력 폼 컴포넌트 구현\n4. 입력된 정보의 유효성 검사 로직 구현\n5. 입력 완료 후 검색 버튼 구현",
+        "testStrategy": "1. 학과 선택 컴포넌트가 올바르게 데이터를 로드하고 선택할 수 있는지 테스트\n2. 내신 성적 입력 시 유효한 범위(1.0~9.0)만 입력 가능한지 테스트\n3. 필수 입력 필드가 비어있을 때 적절한 오류 메시지가 표시되는지 확인\n4. 입력 폼 제출 시 올바른 데이터 형식으로 전달되는지 테스트",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Firebase 데이터 모델 및 서비스 구현",
+        "description": "대학교, 학과, 입시 결과 등의 데이터 모델 설계 및 Firebase 서비스 구현",
+        "details": "1. Firestore 데이터 모델 설계\n   - 대학교 컬렉션: 대학명, 위치(위도/경도), 주소, 웹사이트 등\n   - 학과 컬렉션: 학과명, 소속 대학, 커리큘럼 정보 등\n   - 입시결과 컬렉션: 대학, 학과, 전형유형(학생부종합/학생부교과), 합격자 평균 등급, 연도 등\n\n2. TypeScript 인터페이스 정의\n```typescript\ninterface University {\n  id: string;\n  name: string;\n  location: {\n    latitude: number;\n    longitude: number;\n  };\n  address: string;\n  website: string;\n}\n\ninterface Major {\n  id: string;\n  name: string;\n  universityId: string;\n  curriculum: string[];\n}\n\ninterface AdmissionResult {\n  id: string;\n  universityId: string;\n  majorId: string;\n  admissionType: 'comprehensive' | 'grades'; // 학생부종합 or 학생부교과\n  averageGrade: number;\n  year: number;\n}\n```\n\n3. Firebase 서비스 함수 구현\n```typescript\n// services/firebase.ts\nimport { initializeApp } from 'firebase/app';\nimport { getFirestore, collection, getDocs, query, where, orderBy } from 'firebase/firestore';\n\nconst firebaseConfig = {\n  // Firebase 설정 정보\n};\n\nconst app = initializeApp(firebaseConfig);\nconst db = getFirestore(app);\n\nexport const getUniversitiesByGrade = async (grade: number, admissionType: string) => {\n  const resultsRef = collection(db, 'admissionResults');\n  const q = query(\n    resultsRef,\n    where('admissionType', '==', admissionType),\n    where('averageGrade', '>=', grade),\n    orderBy('averageGrade')\n  );\n  \n  const snapshot = await getDocs(q);\n  // 결과 처리 및 반환 로직\n};\n\nexport const getUniversityById = async (id: string) => {\n  // 대학교 정보 조회 로직\n};\n\nexport const getMajorsByUniversityId = async (universityId: string) => {\n  // 특정 대학의 학과 목록 조회 로직\n};\n```\n\n4. 데이터 초기 로드 및 샘플 데이터 추가 스크립트 작성",
+        "testStrategy": "1. 각 Firebase 서비스 함수에 대한 단위 테스트 작성\n2. 실제 Firestore에 연결하여 CRUD 작업이 정상적으로 수행되는지 테스트\n3. 쿼리 성능 테스트 (대량의 데이터에서도 빠르게 결과를 반환하는지)\n4. 오류 처리 및 예외 상황 테스트",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "대학교 검색 및 필터링 기능 구현",
+        "description": "사용자 입력 정보를 기반으로 대학교를 검색하고 필터링하는 기능 구현",
+        "details": "1. 검색 결과 컴포넌트 구현\n```tsx\nconst SearchResults: React.FC<{\n  grade: number;\n  majorId: string;\n  admissionType: 'comprehensive' | 'grades';\n}> = ({ grade, majorId, admissionType }) => {\n  const [universities, setUniversities] = useState<University[]>([]);\n  const [loading, setLoading] = useState<boolean>(true);\n  const [error, setError] = useState<string | null>(null);\n  \n  useEffect(() => {\n    const fetchResults = async () => {\n      try {\n        setLoading(true);\n        // Firebase 서비스를 사용하여 결과 가져오기\n        const results = await getUniversitiesByGrade(grade, admissionType);\n        setUniversities(results);\n      } catch (err) {\n        setError('결과를 불러오는 중 오류가 발생했습니다.');\n        console.error(err);\n      } finally {\n        setLoading(false);\n      }\n    };\n    \n    fetchResults();\n  }, [grade, majorId, admissionType]);\n  \n  if (loading) return <div>로딩 중...</div>;\n  if (error) return <div>{error}</div>;\n  \n  return (\n    <div>\n      <h2>검색 결과</h2>\n      {universities.length === 0 ? (\n        <p>조건에 맞는 대학교가 없습니다.</p>\n      ) : (\n        <ul>\n          {universities.map((uni) => (\n            <li key={uni.id}>{uni.name}</li>\n          ))}\n        </ul>\n      )}\n    </div>\n  );\n};\n```\n\n2. 필터링 및 정렬 컴포넌트 구현\n```tsx\nconst ResultFilters: React.FC<{\n  onFilterChange: (filters: any) => void;\n}> = ({ onFilterChange }) => {\n  const [region, setRegion] = useState<string>('all');\n  const [sortBy, setSortBy] = useState<'grade' | 'name'>('grade');\n  \n  useEffect(() => {\n    onFilterChange({ region, sortBy });\n  }, [region, sortBy, onFilterChange]);\n  \n  return (\n    <div>\n      <div>\n        <label>지역</label>\n        <select value={region} onChange={(e) => setRegion(e.target.value)}>\n          <option value=\"all\">전체</option>\n          <option value=\"seoul\">서울</option>\n          <option value=\"gyeonggi\">경기</option>\n          {/* 기타 지역 옵션 */}\n        </select>\n      </div>\n      \n      <div>\n        <label>정렬</label>\n        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'grade' | 'name')}>\n          <option value=\"grade\">성적순</option>\n          <option value=\"name\">이름순</option>\n        </select>\n      </div>\n    </div>\n  );\n};\n```\n\n3. 전형 유형(학생부종합/학생부교과) 선택 컴포넌트 구현\n4. 검색 결과와 필터링 컴포넌트를 통합한 페이지 구현\n5. 검색 결과 페이지네이션 구현 (결과가 많을 경우)",
+        "testStrategy": "1. 다양한 검색 조건에 따른 결과 정확성 테스트\n2. 필터링 및 정렬 기능이 올바르게 작동하는지 테스트\n3. 데이터 로딩 상태 및 오류 상태 처리 테스트\n4. 페이지네이션 기능 테스트\n5. 사용자 인터페이스 사용성 테스트",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Firebase 대학교 검색 서비스 구현",
+            "description": "사용자의 내신 성적, 전형 유형, 학과 ID를 기반으로 Firebase에서 대학교 정보를 검색하는 서비스 함수 구현",
+            "dependencies": [],
+            "details": "Firebase Firestore에서 대학교 데이터를 조회하는 함수들을 구현합니다. 주요 함수로는 getUniversitiesByGrade(grade, admissionType), getUniversitiesByMajor(majorId), filterUniversitiesByRegion(universities, region) 등이 필요합니다. 각 함수는 Promise를 반환하고 에러 처리를 포함해야 합니다. 검색 결과는 University[] 타입의 배열로 반환합니다.\n<info added on 2025-07-02T06:41:05.410Z>\n대학교 데이터 조회를 위해 커리어넷 학교정보 API와 Firebase Firestore를 함께 활용하는 하이브리드 방식으로 구현합니다:\n\n1. 커리어넷 API 연동 함수 구현:\n   - fetchUniversitiesByRegion(region): 지역별 대학교 정보 조회\n   - fetchUniversitiesByType(type): 대학 유형별(4년제/전문대) 정보 조회\n   - fetchUniversityDetail(schoolCode): 특정 대학 상세정보 조회\n\n2. Firebase Firestore 연동 함수 구현:\n   - getAdmissionGradesByUniversity(universityId): 대학별 내신 성적 정보 조회\n   - getUniversitiesByGrade(grade, admissionType): 특정 내신 성적으로 지원 가능한 대학 목록 조회\n\n3. 데이터 통합 함수 구현:\n   - combineUniversityData(apiData, firestoreData): API와 Firestore 데이터 통합\n   - filterUniversitiesByRegionAndGrade(region, grade): 지역과 내신 성적 기준 필터링\n\n모든 함수는 Promise를 반환하고 적절한 에러 처리를 포함해야 합니다. 최종 검색 결과는 University[] 타입의 배열로 반환합니다.\n</info added on 2025-07-02T06:41:05.410Z>\n<info added on 2025-07-02T06:54:22.753Z>\n임시 데이터 솔루션 구현:\n\n1. 정적 데이터 파일 구현:\n   - mockUniversities.ts: 주요 대학교 기본 정보(이름, 위치, 유형, 학과 등) 포함\n   - mockAdmissionData.ts: 대학별 내신 등급 및 전형 유형 데이터 포함\n\n2. 모의 API 함수 구현:\n   - getMockUniversitiesByRegion(region): 지역별 대학 필터링\n   - getMockUniversitiesByType(type): 대학 유형별 필터링\n   - getMockUniversitiesByGrade(grade, admissionType): 내신 등급별 필터링\n\n3. 실제 API 연동을 위한 인터페이스 설계:\n   - 모든 모의 함수는 실제 API 함수와 동일한 인터페이스 유지\n   - 향후 커리어넷 API 또는 대학알리미 API로 원활하게 전환 가능하도록 구조화\n\n이 임시 솔루션은 API 승인 대기 없이 개발을 계속할 수 있게 하며, 추후 실제 API로 교체 시 최소한의 코드 변경만 필요하도록 설계합니다.\n</info added on 2025-07-02T06:54:22.753Z>",
+            "status": "done",
+            "testStrategy": "각 함수에 대해 다양한 입력값으로 테스트하고, Firebase 연결 실패 시의 에러 처리도 테스트합니다."
+          },
+          {
+            "id": 2,
+            "title": "전형 유형 선택 컴포넌트 구현",
+            "description": "사용자가 학생부종합/학생부교과 중 전형 유형을 선택할 수 있는 컴포넌트 구현",
+            "dependencies": [],
+            "details": "styled-components를 사용하여 전형 유형 선택 UI를 구현합니다. 라디오 버튼 또는 탭 형태로 'comprehensive'(학생부종합)와 'grades'(학생부교과) 중 하나를 선택할 수 있게 합니다. 선택된 값은 상태로 관리하고 상위 컴포넌트에 전달할 수 있어야 합니다. 기본값은 'grades'로 설정합니다.",
+            "status": "done",
+            "testStrategy": "컴포넌트가 올바르게 렌더링되는지, 선택 변경 시 상태가 업데이트되는지 확인합니다."
+          },
+          {
+            "id": 3,
+            "title": "검색 결과 컴포넌트 개선",
+            "description": "기존 SearchResults 컴포넌트를 개선하여 대학교 정보를 더 자세히 표시하고 스타일링 적용",
+            "dependencies": [],
+            "details": "기존 SearchResults 컴포넌트를 확장하여 각 대학교 항목에 대해 이름, 지역, 필요 내신 등급, 학과 정보 등을 표시합니다. styled-components를 사용하여 카드 형태의 UI로 구현하고, 로딩 상태와 에러 상태에 대한 UI도 개선합니다. 검색 결과가 없을 때의 메시지도 스타일링합니다.",
+            "status": "done",
+            "testStrategy": "다양한 데이터 세트로 컴포넌트를 테스트하고, 로딩/에러/빈 결과 상태에서의 UI를 확인합니다."
+          },
+          {
+            "id": 4,
+            "title": "필터링 및 정렬 기능 확장",
+            "description": "ResultFilters 컴포넌트를 확장하여 더 다양한 필터링 옵션과 정렬 기능 구현",
+            "dependencies": [],
+            "details": "기존 ResultFilters 컴포넌트에 추가 필터링 옵션(대학 유형, 등급 범위 등)을 추가하고, 정렬 기능을 확장합니다. 필터링 로직을 구현하여 선택된 필터에 따라 대학교 목록을 필터링하는 함수를 작성합니다. 모든 필터 옵션은 styled-components로 스타일링하고, 모바일 환경에서도 사용하기 좋게 반응형으로 구현합니다.",
+            "status": "done",
+            "testStrategy": "다양한 필터 조합으로 테스트하고, 필터링 결과가 예상대로 나오는지 확인합니다."
+          },
+          {
+            "id": 5,
+            "title": "통합 검색 페이지 및 페이지네이션 구현",
+            "description": "모든 컴포넌트를 통합한 검색 페이지를 구현하고 검색 결과에 페이지네이션 추가",
+            "dependencies": [],
+            "details": "전형 유형 선택, 필터링, 검색 결과 컴포넌트를 통합한 페이지를 구현합니다. 상태 관리를 통해 컴포넌트 간 데이터 흐름을 설정하고, 검색 결과가 많을 경우를 대비해 페이지네이션 기능을 추가합니다. 페이지네이션은 현재 페이지, 페이지당 항목 수, 전체 페이지 수를 표시하고, 이전/다음 페이지로 이동할 수 있는 버튼을 포함합니다. 전체 페이지의 레이아웃과 반응형 디자인도 구현합니다.",
+            "status": "pending",
+            "testStrategy": "전체 페이지 흐름을 테스트하고, 다양한 화면 크기에서 반응형 디자인이 제대로 작동하는지 확인합니다. 페이지네이션이 올바르게 작동하는지 테스트합니다."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "카카오맵 API 연동 및 지도 표시 기능 구현",
+        "description": "카카오맵 API를 사용하여 대학교 위치를 지도에 표시하고 관련 정보를 제공하는 기능 구현",
+        "details": "1. 카카오맵 컴포넌트 구현\n```tsx\nimport { Map, MapMarker } from 'react-kakao-maps-sdk';\n\nconst UniversityMap: React.FC<{\n  universities: University[];\n  selectedUniversity?: University;\n  onMarkerClick: (university: University) => void;\n}> = ({ universities, selectedUniversity, onMarkerClick }) => {\n  // 지도 중심 좌표 설정 (선택된 대학이 있으면 해당 위치, 없으면 기본 위치)\n  const center = selectedUniversity\n    ? { lat: selectedUniversity.location.latitude, lng: selectedUniversity.location.longitude }\n    : { lat: 37.5665, lng: 126.9780 }; // 서울 중심 좌표\n  \n  return (\n    <Map\n      center={center}\n      style={{ width: '100%', height: '500px' }}\n      level={selectedUniversity ? 3 : 7} // 줌 레벨 설정\n    >\n      {universities.map((uni) => (\n        <MapMarker\n          key={uni.id}\n          position={{\n            lat: uni.location.latitude,\n            lng: uni.location.longitude,\n          }}\n          onClick={() => onMarkerClick(uni)}\n          // 선택된 대학교 마커 스타일 변경\n          image={{\n            src: selectedUniversity?.id === uni.id\n              ? '/selected-marker.png'\n              : '/marker.png',\n            size: { width: 24, height: 35 },\n          }}\n        />\n      ))}\n    </Map>\n  );\n};\n```\n\n2. 사용자 위치 가져오기 및 거리 계산 기능 구현\n```typescript\nconst getUserLocation = (): Promise<{ latitude: number; longitude: number }> => {\n  return new Promise((resolve, reject) => {\n    if (!navigator.geolocation) {\n      reject(new Error('Geolocation is not supported by your browser'));\n    } else {\n      navigator.geolocation.getCurrentPosition(\n        (position) => {\n          resolve({\n            latitude: position.coords.latitude,\n            longitude: position.coords.longitude,\n          });\n        },\n        (error) => {\n          reject(error);\n        }\n      );\n    }\n  });\n};\n\nconst calculateDistance = (\n  lat1: number,\n  lon1: number,\n  lat2: number,\n  lon2: number\n): number => {\n  // 하버사인 공식을 사용한 두 지점 간의 거리 계산\n  const R = 6371; // 지구 반경 (km)\n  const dLat = (lat2 - lat1) * (Math.PI / 180);\n  const dLon = (lon2 - lon1) * (Math.PI / 180);\n  const a =\n    Math.sin(dLat / 2) * Math.sin(dLat / 2) +\n    Math.cos(lat1 * (Math.PI / 180)) *\n      Math.cos(lat2 * (Math.PI / 180)) *\n      Math.sin(dLon / 2) *\n      Math.sin(dLon / 2);\n  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n  const distance = R * c;\n  return distance;\n};\n```\n\n3. 대중교통 및 도보 이동 정보 가져오기 (카카오 모빌리티 API 활용)\n4. 지도와 대학교 목록을 통합한 페이지 구현\n5. 대학교 마커 클릭 시 상세 정보 표시 기능 구현",
+        "testStrategy": "1. 카카오맵이 올바르게 로드되고 마커가 정확한 위치에 표시되는지 테스트\n2. 사용자 위치 가져오기 기능 테스트\n3. 거리 계산 알고리즘의 정확성 테스트\n4. 대중교통 및 도보 이동 정보 API 호출 테스트\n5. 마커 클릭 이벤트 및 상세 정보 표시 기능 테스트",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "대학교 및 학과 상세 정보 페이지 구현",
+        "description": "선택한 대학교와 학과의 상세 정보를 보여주는 페이지 구현",
+        "details": "1. 대학교 상세 정보 페이지 컴포넌트 구현\n```tsx\nconst UniversityDetail: React.FC<{ universityId: string }> = ({ universityId }) => {\n  const [university, setUniversity] = useState<University | null>(null);\n  const [majors, setMajors] = useState<Major[]>([]);\n  const [loading, setLoading] = useState<boolean>(true);\n  \n  useEffect(() => {\n    const fetchUniversityData = async () => {\n      try {\n        setLoading(true);\n        // 대학교 정보 가져오기\n        const uniData = await getUniversityById(universityId);\n        setUniversity(uniData);\n        \n        // 해당 대학의 학과 목록 가져오기\n        const majorsData = await getMajorsByUniversityId(universityId);\n        setMajors(majorsData);\n      } catch (error) {\n        console.error('Error fetching university data:', error);\n      } finally {\n        setLoading(false);\n      }\n    };\n    \n    fetchUniversityData();\n  }, [universityId]);\n  \n  if (loading) return <div>로딩 중...</div>;\n  if (!university) return <div>대학교 정보를 찾을 수 없습니다.</div>;\n  \n  return (\n    <div>\n      <h1>{university.name}</h1>\n      <p>주소: {university.address}</p>\n      <p>웹사이트: <a href={university.website} target=\"_blank\" rel=\"noopener noreferrer\">{university.website}</a></p>\n      \n      <h2>학과 목록</h2>\n      <ul>\n        {majors.map((major) => (\n          <li key={major.id}>\n            <Link to={`/major/${major.id}`}>{major.name}</Link>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n```\n\n2. 학과 상세 정보 페이지 컴포넌트 구현\n```tsx\nconst MajorDetail: React.FC<{ majorId: string }> = ({ majorId }) => {\n  const [major, setMajor] = useState<Major | null>(null);\n  const [university, setUniversity] = useState<University | null>(null);\n  const [loading, setLoading] = useState<boolean>(true);\n  \n  useEffect(() => {\n    const fetchMajorData = async () => {\n      try {\n        setLoading(true);\n        // 학과 정보 가져오기\n        const majorData = await getMajorById(majorId);\n        setMajor(majorData);\n        \n        // 해당 학과의 대학교 정보 가져오기\n        const uniData = await getUniversityById(majorData.universityId);\n        setUniversity(uniData);\n      } catch (error) {\n        console.error('Error fetching major data:', error);\n      } finally {\n        setLoading(false);\n      }\n    };\n    \n    fetchMajorData();\n  }, [majorId]);\n  \n  if (loading) return <div>로딩 중...</div>;\n  if (!major || !university) return <div>학과 정보를 찾을 수 없습니다.</div>;\n  \n  return (\n    <div>\n      <h1>{major.name}</h1>\n      <h2>{university.name}</h2>\n      \n      <h3>커리큘럼</h3>\n      <ul>\n        {major.curriculum.map((course, index) => (\n          <li key={index}>{course}</li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n```\n\n3. 입시 결과 정보 표시 컴포넌트 구현\n4. 대학교와 학과 간의 네비게이션 기능 구현\n5. 상세 페이지에서 지도 표시 기능 통합",
+        "testStrategy": "1. 대학교 및 학과 데이터가 올바르게 로드되는지 테스트\n2. 페이지 간 네비게이션이 정상적으로 작동하는지 테스트\n3. 커리큘럼 정보가 올바르게 표시되는지 테스트\n4. 오류 상황 처리 테스트 (존재하지 않는 ID 등)\n5. 반응형 디자인 테스트 (다양한 화면 크기에서 적절하게 표시되는지)",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "웹 크롤링 모듈 개발",
+        "description": "대학교 입시 결과 데이터를 주기적으로 수집하는 웹 크롤링 모듈 개발",
+        "details": "1. Node.js 기반의 웹 크롤링 스크립트 구현\n```javascript\nconst puppeteer = require('puppeteer');\nconst admin = require('firebase-admin');\n\n// Firebase Admin SDK 초기화\nconst serviceAccount = require('./serviceAccountKey.json');\nadmin.initializeApp({\n  credential: admin.credential.cert(serviceAccount)\n});\nconst db = admin.firestore();\n\nasync function scrapeAdmissionResults() {\n  const browser = await puppeteer.launch();\n  const page = await browser.newPage();\n  \n  try {\n    // 예시: 대학알리미 사이트에서 데이터 크롤링\n    await page.goto('https://www.academyinfo.go.kr/');\n    \n    // 대학 목록 페이지로 이동\n    // ... 네비게이션 코드 ...\n    \n    // 각 대학별로 입시 결과 데이터 수집\n    const universities = await page.evaluate(() => {\n      // DOM에서 필요한 데이터 추출하는 코드\n      // ...\n    });\n    \n    // 수집된 데이터를 Firebase에 저장\n    for (const uni of universities) {\n      for (const major of uni.majors) {\n        await db.collection('admissionResults').add({\n          universityId: uni.id,\n          majorId: major.id,\n          admissionType: major.admissionType,\n          averageGrade: major.averageGrade,\n          year: new Date().getFullYear(),\n          updatedAt: admin.firestore.FieldValue.serverTimestamp()\n        });\n      }\n    }\n    \n    console.log('Data scraping completed successfully');\n  } catch (error) {\n    console.error('Error during scraping:', error);\n  } finally {\n    await browser.close();\n  }\n}\n\n// 함수 실행\nscrapeAdmissionResults();\n```\n\n2. 크롤링 대상 사이트 분석 및 선택 (대학알리미, 각 대학 입학처 등)\n3. 크롤링 스케줄링 구현 (cron 작업 설정)\n```javascript\nconst cron = require('node-cron');\n\n// 매월 1일 오전 3시에 실행\ncron.schedule('0 3 1 * *', () => {\n  console.log('Running monthly data scraping...');\n  scrapeAdmissionResults();\n});\n```\n\n4. 데이터 정제 및 변환 로직 구현\n5. 오류 처리 및 로깅 시스템 구현\n6. Firebase Cloud Functions를 사용하여 서버리스 환경에서 실행되도록 설정",
+        "testStrategy": "1. 다양한 대학 웹사이트에서 크롤링이 정상적으로 작동하는지 테스트\n2. 수집된 데이터의 정확성 검증\n3. 스케줄링이 정상적으로 작동하는지 테스트\n4. 오류 상황에서의 복구 및 로깅 테스트\n5. Firebase에 데이터가 올바르게 저장되는지 테스트",
+        "priority": "low",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "사용자 자택 위치 기반 기능 구현",
+        "description": "사용자의 자택 위치를 입력받고 대학교까지의 거리 및 이동 방법을 제공하는 기능 구현",
+        "details": "1. 사용자 자택 위치 입력 컴포넌트 구현\n```tsx\nconst HomeLocationInput: React.FC<{\n  onLocationSet: (location: { latitude: number; longitude: number; address: string }) => void;\n}> = ({ onLocationSet }) => {\n  const [address, setAddress] = useState<string>('');\n  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);\n  \n  const handleAddressSearch = async () => {\n    try {\n      // 카카오 주소 검색 API 사용\n      const response = await fetch(\n        `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,\n        {\n          headers: {\n            Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_REST_API_KEY}`\n          }\n        }\n      );\n      \n      const data = await response.json();\n      if (data.documents && data.documents.length > 0) {\n        const result = data.documents[0];\n        const location = {\n          latitude: parseFloat(result.y),\n          longitude: parseFloat(result.x),\n          address: result.address_name\n        };\n        setCoordinates({ latitude: location.latitude, longitude: location.longitude });\n        onLocationSet(location);\n      }\n    } catch (error) {\n      console.error('Error searching address:', error);\n    }\n  };\n  \n  const handleCurrentLocation = () => {\n    if (navigator.geolocation) {\n      navigator.geolocation.getCurrentPosition(\n        async (position) => {\n          const { latitude, longitude } = position.coords;\n          \n          // 좌표를 주소로 변환 (역지오코딩)\n          try {\n            const response = await fetch(\n              `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${longitude}&y=${latitude}`,\n              {\n                headers: {\n                  Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_REST_API_KEY}`\n                }\n              }\n            );\n            \n            const data = await response.json();\n            if (data.documents && data.documents.length > 0) {\n              const addressName = data.documents[0].address.address_name;\n              setAddress(addressName);\n              setCoordinates({ latitude, longitude });\n              onLocationSet({ latitude, longitude, address: addressName });\n            }\n          } catch (error) {\n            console.error('Error in reverse geocoding:', error);\n          }\n        },\n        (error) => {\n          console.error('Error getting current location:', error);\n        }\n      );\n    }\n  };\n  \n  return (\n    <div>\n      <h3>자택 위치 설정</h3>\n      <div>\n        <input\n          type=\"text\"\n          value={address}\n          onChange={(e) => setAddress(e.target.value)}\n          placeholder=\"주소를 입력하세요\"\n        />\n        <button onClick={handleAddressSearch}>검색</button>\n        <button onClick={handleCurrentLocation}>현재 위치 사용</button>\n      </div>\n      {coordinates && (\n        <p>\n          설정된 위치: {address} (위도: {coordinates.latitude.toFixed(6)}, 경도: {coordinates.longitude.toFixed(6)})\n        </p>\n      )}\n    </div>\n  );\n};\n```\n\n2. 대학교까지의 거리 계산 및 표시 컴포넌트 구현\n```tsx\nconst DistanceInfo: React.FC<{\n  homeLocation: { latitude: number; longitude: number };\n  university: University;\n}> = ({ homeLocation, university }) => {\n  const [distance, setDistance] = useState<number | null>(null);\n  const [transitInfo, setTransitInfo] = useState<any | null>(null);\n  const [loading, setLoading] = useState<boolean>(true);\n  \n  useEffect(() => {\n    const calculateDistanceAndTransit = async () => {\n      try {\n        setLoading(true);\n        \n        // 직선 거리 계산\n        const dist = calculateDistance(\n          homeLocation.latitude,\n          homeLocation.longitude,\n          university.location.latitude,\n          university.location.longitude\n        );\n        setDistance(dist);\n        \n        // 카카오 모빌리티 API를 사용하여 대중교통 정보 가져오기\n        const response = await fetch(\n          'https://apis-navi.kakaomobility.com/v1/directions',\n          {\n            method: 'POST',\n            headers: {\n              Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_REST_API_KEY}`,\n              'Content-Type': 'application/json'\n            },\n            body: JSON.stringify({\n              origin: {\n                x: homeLocation.longitude,\n                y: homeLocation.latitude\n              },\n              destination: {\n                x: university.location.longitude,\n                y: university.location.latitude\n              },\n              waypoints: [],\n              priority: 'RECOMMEND',\n              car_fuel: 'GASOLINE',\n              car_hipass: false,\n              alternatives: true,\n              road_details: true\n            })\n          }\n        );\n        \n        const data = await response.json();\n        setTransitInfo(data);\n      } catch (error) {\n        console.error('Error calculating distance and transit:', error);\n      } finally {\n        setLoading(false);\n      }\n    };\n    \n    calculateDistanceAndTransit();\n  }, [homeLocation, university]);\n  \n  if (loading) return <div>이동 정보를 계산 중입니다...</div>;\n  \n  return (\n    <div>\n      <h3>이동 정보</h3>\n      {distance !== null && (\n        <p>직선 거리: {distance.toFixed(1)} km</p>\n      )}\n      \n      {transitInfo && (\n        <div>\n          <h4>대중교통 정보</h4>\n          {/* 대중교통 정보 표시 로직 */}\n        </div>\n      )}\n    </div>\n  );\n};\n```\n\n3. 대중교통 및 도보 경로 표시 기능 구현\n4. 예상 소요 시간 계산 및 표시 기능 구현\n5. 사용자 위치와 대학교 위치를 함께 지도에 표시하는 기능 구현",
+        "testStrategy": "1. 주소 검색 및 좌표 변환 기능 테스트\n2. 현재 위치 가져오기 기능 테스트\n3. 거리 계산 알고리즘의 정확성 테스트\n4. 카카오 모빌리티 API 연동 테스트\n5. 다양한 위치 조합에서의 경로 및 소요 시간 계산 테스트",
+        "priority": "low",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "UI/UX 디자인 개선 및 반응형 레이아웃 구현",
+        "description": "사용자 인터페이스 디자인 개선 및 다양한 디바이스에서 사용 가능한 반응형 레이아웃 구현",
+        "details": "1. 전역 스타일 및 테마 설정\n```tsx\n// styles/theme.ts\nexport const theme = {\n  colors: {\n    primary: '#4285F4',\n    secondary: '#34A853',\n    accent: '#FBBC05',\n    error: '#EA4335',\n    background: '#FFFFFF',\n    text: '#202124',\n    lightGray: '#F1F3F4',\n    darkGray: '#5F6368'\n  },\n  fonts: {\n    body: '\"Noto Sans KR\", sans-serif',\n    heading: '\"Noto Sans KR\", sans-serif'\n  },\n  fontSizes: {\n    small: '0.875rem',\n    medium: '1rem',\n    large: '1.25rem',\n    xlarge: '1.5rem',\n    xxlarge: '2rem'\n  },\n  breakpoints: {\n    mobile: '576px',\n    tablet: '768px',\n    desktop: '1024px'\n  }\n};\n```\n\n2. 공통 컴포넌트 스타일링 (버튼, 입력 필드, 카드 등)\n```tsx\n// components/Button.tsx\nimport styled from 'styled-components';\n\ninterface ButtonProps {\n  variant?: 'primary' | 'secondary' | 'outline';\n  size?: 'small' | 'medium' | 'large';\n  fullWidth?: boolean;\n}\n\nconst Button = styled.button<ButtonProps>`\n  font-family: ${({ theme }) => theme.fonts.body};\n  font-size: ${({ theme, size }) => {\n    switch (size) {\n      case 'small': return theme.fontSizes.small;\n      case 'large': return theme.fontSizes.large;\n      default: return theme.fontSizes.medium;\n    }\n  }};\n  padding: ${({ size }) => {\n    switch (size) {\n      case 'small': return '0.5rem 1rem';\n      case 'large': return '1rem 2rem';\n      default: return '0.75rem 1.5rem';\n    }\n  }};\n  border-radius: 4px;\n  cursor: pointer;\n  transition: all 0.2s ease-in-out;\n  width: ${({ fullWidth }) => fullWidth ? '100%' : 'auto'};\n  \n  ${({ theme, variant }) => {\n    switch (variant) {\n      case 'primary':\n        return `\n          background-color: ${theme.colors.primary};\n          color: white;\n          border: none;\n          &:hover {\n            background-color: darken(${theme.colors.primary}, 10%);\n          }\n        `;\n      case 'secondary':\n        return `\n          background-color: ${theme.colors.secondary};\n          color: white;\n          border: none;\n          &:hover {\n            background-color: darken(${theme.colors.secondary}, 10%);\n          }\n        `;\n      case 'outline':\n        return `\n          background-color: transparent;\n          color: ${theme.colors.primary};\n          border: 1px solid ${theme.colors.primary};\n          &:hover {\n            background-color: ${theme.colors.lightGray};\n          }\n        `;\n      default:\n        return `\n          background-color: ${theme.colors.primary};\n          color: white;\n          border: none;\n          &:hover {\n            background-color: darken(${theme.colors.primary}, 10%);\n          }\n        `;\n    }\n  }}\n`;\n\nexport default Button;\n```\n\n3. 반응형 레이아웃 구현\n```tsx\n// components/Layout.tsx\nimport styled from 'styled-components';\n\nconst Container = styled.div`\n  max-width: 1200px;\n  margin: 0 auto;\n  padding: 0 1rem;\n  \n  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {\n    padding: 0 0.5rem;\n  }\n`;\n\nconst Grid = styled.div`\n  display: grid;\n  grid-template-columns: repeat(12, 1fr);\n  gap: 1rem;\n  \n  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {\n    grid-template-columns: repeat(6, 1fr);\n  }\n  \n  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {\n    grid-template-columns: 1fr;\n  }\n`;\n\nconst Col = styled.div<{ span?: number; tabletSpan?: number; mobileSpan?: number }>`\n  grid-column: span ${({ span }) => span || 12};\n  \n  @media (max-width: ${({ theme }) => theme.breakpoints.tablet}) {\n    grid-column: span ${({ tabletSpan, span }) => tabletSpan || span || 6};\n  }\n  \n  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {\n    grid-column: span ${({ mobileSpan }) => mobileSpan || 1};\n  }\n`;\n\nexport { Container, Grid, Col };\n```\n\n4. 헤더 및 푸터 컴포넌트 구현\n5. 로딩 상태 및 오류 상태를 위한 UI 컴포넌트 구현\n6. 애니메이션 및 전환 효과 구현",
+        "testStrategy": "1. 다양한 화면 크기에서의 레이아웃 테스트 (모바일, 태블릿, 데스크톱)\n2. 크로스 브라우저 호환성 테스트 (Chrome, Firefox, Safari, Edge)\n3. 접근성 테스트 (스크린 리더 호환성, 키보드 네비게이션 등)\n4. 성능 테스트 (렌더링 속도, 애니메이션 부드러움 등)\n5. 사용자 테스트 (실제 사용자를 대상으로 한 사용성 테스트)",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "배포 및 성능 최적화",
+        "description": "애플리케이션 배포 설정 및 성능 최적화 작업 수행",
+        "details": "1. 빌드 및 배포 스크립트 설정\n```json\n// package.json\n{\n  \"scripts\": {\n    \"start\": \"react-scripts start\",\n    \"build\": \"react-scripts build\",\n    \"test\": \"react-scripts test\",\n    \"eject\": \"react-scripts eject\",\n    \"analyze\": \"source-map-explorer 'build/static/js/*.js'\",\n    \"deploy\": \"npm run build && firebase deploy\"\n  }\n}\n```\n\n2. Firebase Hosting 설정\n```json\n// firebase.json\n{\n  \"hosting\": {\n    \"public\": \"build\",\n    \"ignore\": [\n      \"firebase.json\",\n      \"**/.*\",\n      \"**/node_modules/**\"\n    ],\n    \"rewrites\": [\n      {\n        \"source\": \"**\",\n        \"destination\": \"/index.html\"\n      }\n    ],\n    \"headers\": [\n      {\n        \"source\": \"**/*.@(js|css)\",\n        \"headers\": [\n          {\n            \"key\": \"Cache-Control\",\n            \"value\": \"max-age=31536000\"\n          }\n        ]\n      },\n      {\n        \"source\": \"**/*.@(jpg|jpeg|gif|png|svg|webp)\",\n        \"headers\": [\n          {\n            \"key\": \"Cache-Control\",\n            \"value\": \"max-age=31536000\"\n          }\n        ]\n      }\n    ]\n  }\n}\n```\n\n3. 코드 스플리팅 및 지연 로딩 구현\n```tsx\nimport { lazy, Suspense } from 'react';\nimport { BrowserRouter as Router, Routes, Route } from 'react-router-dom';\nimport LoadingSpinner from './components/LoadingSpinner';\n\n// 지연 로딩을 사용한 컴포넌트 임포트\nconst Home = lazy(() => import('./pages/Home'));\nconst SearchResults = lazy(() => import('./pages/SearchResults'));\nconst UniversityDetail = lazy(() => import('./pages/UniversityDetail'));\nconst MajorDetail = lazy(() => import('./pages/MajorDetail'));\n\nconst App: React.FC = () => {\n  return (\n    <Router>\n      <Suspense fallback={<LoadingSpinner />}>\n        <Routes>\n          <Route path=\"/\" element={<Home />} />\n          <Route path=\"/search\" element={<SearchResults />} />\n          <Route path=\"/university/:id\" element={<UniversityDetail />} />\n          <Route path=\"/major/:id\" element={<MajorDetail />} />\n        </Routes>\n      </Suspense>\n    </Router>\n  );\n};\n```\n\n4. 이미지 최적화\n```tsx\nconst OptimizedImage: React.FC<{\n  src: string;\n  alt: string;\n  width?: number;\n  height?: number;\n}> = ({ src, alt, width, height }) => {\n  // WebP 형식 지원 여부 확인\n  const supportsWebP = () => {\n    const elem = document.createElement('canvas');\n    if (elem.getContext && elem.getContext('2d')) {\n      return elem.toDataURL('image/webp').indexOf('data:image/webp') === 0;\n    }\n    return false;\n  };\n  \n  // WebP 지원 시 WebP 이미지 사용, 아니면 원본 이미지 사용\n  const imageSrc = supportsWebP() ? `${src}.webp` : src;\n  \n  return (\n    <img\n      src={imageSrc}\n      alt={alt}\n      width={width}\n      height={height}\n      loading=\"lazy\" // 지연 로딩 적용\n    />\n  );\n};\n```\n\n5. 성능 모니터링 및 분석 도구 설정 (Google Analytics, Lighthouse 등)\n6. 서비스 워커 구현 (오프라인 지원 및 캐싱)\n```tsx\n// src/serviceWorker.ts\nexport const register = () => {\n  if ('serviceWorker' in navigator) {\n    window.addEventListener('load', () => {\n      const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;\n      navigator.serviceWorker.register(swUrl)\n        .then(registration => {\n          console.log('ServiceWorker registration successful');\n        })\n        .catch(error => {\n          console.error('ServiceWorker registration failed:', error);\n        });\n    });\n  }\n};\n\nexport const unregister = () => {\n  if ('serviceWorker' in navigator) {\n    navigator.serviceWorker.ready\n      .then(registration => {\n        registration.unregister();\n      })\n      .catch(error => {\n        console.error(error.message);\n      });\n  }\n};\n```",
+        "testStrategy": "1. 빌드 및 배포 프로세스 테스트\n2. 로딩 성능 테스트 (Lighthouse 점수 측정)\n3. 코드 스플리팅 및 지연 로딩 효과 테스트\n4. 서비스 워커 기능 테스트 (오프라인 모드에서의 동작)\n5. 다양한 네트워크 환경에서의 성능 테스트 (3G, 4G 등)\n6. 메모리 사용량 및 CPU 사용량 모니터링",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-02T06:03:56.505Z",
+      "updated": "2025-07-02T07:16:45.113Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
